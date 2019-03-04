@@ -3,9 +3,12 @@ Code for property price mapping using leaflet and python
 (Data sources not committed to GitHub)
 
 Hosted on:
+
 propertyprices.melbourne
+
 propertyprices.sydney
-by robusinsights.com.ai
+
+by robusinsights.com.au
 
 ## Using TopoJSON
 Geo-JSON file from realestate-analysis.py will need to be converted to TopoJSON format to reduce size and provide useable load times
