@@ -1,1 +1,254 @@
+<!DOCTYPE html>
+<head>    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script>L_PREFER_CANVAS = false; L_NO_TOUCH = false; L_DISABLE_3D = false;</script>
+    <script src="leaflet.js"></script>
+    <script src='leaflet-omnivore.min.js'></script>
+    <script src="chroma.js"></script>
+    <link rel="stylesheet" href="leaflet.css" />
+    <link rel="shortcut icon" href="favicon.ico" type="image/png">
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}
+    p {font-family: Helvetica, sans-serif; font-size:0.875em; padding-left: 12px; padding-right: 12px}
+    .child{line-height:20px;vertical-align: middle;}
+    </style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}
+    .leaflet-control-layers { width: 58px; font: 24px/32px Arial, Helvetica, sans-serif; font-weight: bold; border-radius: 10px; text-align: centre; vertical-align: middle;}
+    .info { padding: 12px 16px; font: 24px/32px Arial, Helvetica, sans-serif; background: white; background: rgba(255,255,255,0.9); box-shadow: 0 0 15px rgba(0,0,0,0.2); border-radius: 10px; } 
+    .info h4 { margin: 0 0 5px; color: #777; } 
+    </style>
+    <style> #map {position : relative;width : 100.0%;height: 92.5%;left: 0.0%;top: 0.0%;} </style>
+    <style>     input[type=radio] {border: 0px;width: 100%;height: 2em; }</style>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-109484647-1"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
 
+    gtag('config', 'UA-109484647-1');
+    </script>
+</head>
+<title>Property Yield Map</title>
+
+<body>    
+    
+<div class="folium-map" id="map" ></div>
+<p>
+    <span style="float:left"><a href="http://www.robusinsights.com.au" target="_blank"><img src="RI_logo.png" alt="Robus Insights" style="width:24px;height:24px;border:0" align="middle";></a>
+        Powered by <a href="http://www.robusinsights.com.au" target="_blank">Robus Insights</a></span>
+    <span style="float:right">© Copyright Robus Insights. All rights reserved.</span>
+</p>
+</body>
+
+<script type="text/javascript" src="data.js"></script>
+
+<script>        
+
+
+
+var bounds = null;
+var map = L.map(
+                'map',
+                {center: co_ordinates,
+                zoom: 10.5,
+                maxBounds: bounds,
+                layers: [],
+                worldCopyJump: false,
+                crs: L.CRS.EPSG3857
+                });
+L.control.scale().addTo(map);
+
+
+var tile_layer = L.tileLayer(
+                            'https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png',
+                            {
+                            "attribution": null,
+                            "detectRetina": false,
+                            "maxZoom": 18,
+                            "minZoom": 1,
+                            "noWrap": false,
+                            "subdomains": "abc"
+                            }
+                            ).addTo(map);
+
+    // Initialise Variables
+var na_colour = '#d5d5dd';
+var light_colour = '#e6eeff';
+var dark_colour = '#002b80';
+
+
+// Define style function for each stat
+function getColor(d) {
+    scale = chroma.scale('Blues');
+    return d>0 ? scale((d-min_yield)/(max_yield-min_yield)).hex():
+    na_colour;
+}
+
+function style(feature) {
+    return {
+        weight: 1,
+        opacity: 0.7,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.7,
+        fillColor: getColor(feature.properties.Yield)
+    };
+}
+
+function getColorPrice(d) {
+    scale = chroma.scale('OrRd');
+    return d>0 ? scale((d-min_price)/(max_price-min_price)).hex():
+    na_colour;
+}
+
+
+function stylePrice(feature) {
+    return {
+        weight: 1,
+        opacity: 0.7,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.7,
+        fillColor: getColorPrice(feature.properties.Median_Price)
+    };
+}
+
+
+function getColorRent(d) {
+    scale = chroma.scale('YlGn');
+    return d>0 ? scale((d-min_rent)/(max_rent-min_rent)).hex():
+    na_colour;
+}
+
+function styleRent(feature) {
+    return {
+        weight: 1,
+        opacity: 0.7,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.7,
+        fillColor: getColorRent(feature.properties.Median_Price_Rent)
+    };
+}
+
+// Define interactive bar on top right    
+var info = L.control();info.onAdd = function (map) {
+    this._div = L.DomUtil.create('div', 'info');
+    this.update();return this._div;};
+    info.update = function (props){   
+        if (props){
+            if (props.Yield > 0){
+            var yield = (props.Yield*100).toFixed(1).toString() + '%';
+            } else {var yield = 'N/A';}
+
+            if (props.Median_Price > 1){
+            var price = '$' + props.Median_Price.toFixed(0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            } else {var price = 'N/A';}
+
+            if (props.Median_Price_Rent > 1){
+            var rent = '$' + props.Median_Price_Rent.toFixed(0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + ' p.w.';
+            } else {var rent = 'N/A';}
+
+        this._div.innerHTML = '<h4>Suburb Stats / Bedroom</h4>' +  
+        '<b>' + props.Suburb_PC + '</b><br />Yield: ' + yield + '</b><br />Median Price: ' + price + 
+        '</b><br />Median Rent: ' + rent +'</b><br />Samples: ' + props.Sample_Rent + '(R) ' + props.Sample + '(P)';
+    } else {
+        this._div.innerHTML = '<h4>Suburb Yield</h4>' + 'Hover over a suburb';
+    }}
+    info.addTo(map);
+
+// Function for interactivity
+info_func = function(e) {
+            var layer = e.target;
+            layer.setStyle({
+                weight: 3,
+                color: '#404040',
+                dashArray: '',
+                fillOpacity: 0.9
+            });
+
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                layer.bringToFront();
+            }
+            info.update(layer.feature.properties);}
+
+// Define interactivity for each layer
+geo_json_onEachFeature = function onEachFeature(feature, layer) {
+    layer.on({
+        mouseout: function(e) {
+            geo_json.resetStyle(e.target);},
+        mouseover: info_func,
+        click: info_func
+});}
+
+
+geo_json_onEachFeature1 = function onEachFeature(feature, layer) {
+    layer.on({
+        mouseout: function(e) {
+            geo_json1.resetStyle(e.target);},
+        mouseover: info_func,
+        click: info_func
+});}
+
+
+geo_json_onEachFeature2 = function onEachFeature(feature, layer) {
+    layer.on({
+        mouseout: function(e) {
+            geo_json2.resetStyle(e.target);},
+        mouseover: info_func,
+        click: info_func
+});}
+
+// Define each layer
+var geo_json_base = L.geoJson(
+    null                    
+        , {
+            style: style,
+            onEachFeature: geo_json_onEachFeature
+        });
+var geo_json = (omnivore.topojson(file_topo, null, geo_json_base)    
+    ).addTo(map);
+
+var geo_json1_base = L.geoJson(
+    null                    
+        , {
+            style: stylePrice,
+            onEachFeature: geo_json_onEachFeature1
+        });   
+var geo_json1 = omnivore.topojson(file_topo, null, geo_json1_base)
+
+var geo_json2_base = L.geoJson(
+    null                    
+        , {
+            style: styleRent,
+            onEachFeature: geo_json_onEachFeature2
+        });  
+var geo_json2 = omnivore.topojson(file_topo, null, geo_json2_base)
+
+// Add layer
+var baseLayers = {
+    "Yield": geo_json,
+    "Price": geo_json1,
+    "Rent": geo_json2,
+};
+var select = L.control.layers(baseLayers,null,{collapsed:false, position:'topright'});
+    select.addTo(map);
+
+// var legend = L.control({position: 'bottomright'});
+
+//     legend.onAdd = function (map) {
+
+//         var div = L.DomUtil.create('div', 'info legend');
+
+//         div.innerHTML += '<i style="background: linear-gradient(to bottom, ' + light_colour + ' 0%,' + dark_colour + ' 100%)"></i>' + 
+//         (min_yield*100).toFixed(1).toString() + '%<br><br><br><br><br><br><br><br><br>' + (max_yield*100).toFixed(1).toString() + '%';
+
+//         div.innerHTML +=
+//                 '<br><br><i style="background:' + na_colour + ';height:18px"></i> ' + 'N/A';
+
+//         return div;
+//     };
+
+//     legend.addTo(map);
+
+</script>

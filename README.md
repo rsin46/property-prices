@@ -26,4 +26,4 @@ topoquantize 1e5 < input > output
 toposimplify -p 5e-8 (or 1e-8) < input > output
 
 
-Rename output to data.js for use with HTML Leaflet script
+Rename output in data.js for use with HTML Leaflet script
